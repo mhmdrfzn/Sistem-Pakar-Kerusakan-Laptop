@@ -172,8 +172,8 @@ Tabel tambahan:
 
 **1. Clone repository**
 ```bash
-git clone https://github.com/username/SistemPakar.git
-cd SistemPakar
+git clone https://github.com/mhmdrfzn/Sistem-Pakar-Kerusakan-Laptop.git
+cd Sistem-Pakar-Kerusakan-Laptop
 ```
 
 **2. Install dependencies**
