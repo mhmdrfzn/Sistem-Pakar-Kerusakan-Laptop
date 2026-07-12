@@ -6,6 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Sistem Pakar Diagnosa Laptop') | LaptopExpert AI</title>
     <meta name="description" content="@yield('description', 'Sistem Pakar berbasis Forward Chaining dan Certainty Factor untuk mendiagnosa kerusakan laptop dengan akurasi tinggi.')">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('favicon.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-mesh min-h-screen">
