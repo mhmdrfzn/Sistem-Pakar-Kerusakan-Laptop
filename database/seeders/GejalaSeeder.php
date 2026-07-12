@@ -97,7 +97,10 @@ class GejalaSeeder extends Seeder
         ];
 
         foreach ($gejala as $item) {
-            Gejala::create($item);
+            Gejala::updateOrCreate(
+                ['kode' => $item['kode']],
+                $item
+            );
         }
     }
 }

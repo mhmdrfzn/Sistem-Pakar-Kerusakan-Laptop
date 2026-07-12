@@ -190,7 +190,10 @@ class KerusakanSeeder extends Seeder
         ];
 
         foreach ($data as $item) {
-            Kerusakan::create($item);
+            Kerusakan::updateOrCreate(
+                ['kode' => $item['kode']],
+                $item
+            );
         }
     }
 }
