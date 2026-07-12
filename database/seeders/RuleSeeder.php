@@ -12,12 +12,10 @@ class RuleSeeder extends Seeder
     public function run(): void
     {
         // Mapping: [kode_kerusakan => [[kode_gejala, cf_nilai], ...]]
-        // Sumber: Tabel 4. Basis Rule
-        // Format aturan: IF Gx(cf) AND Gy(cf) ... THEN Kn
+        // Struktur baru: 1 Rule per kerusakan, gejala disimpan di pivot rule_gejala
 
         $rules = [
             // K001 - LCD
-            // IF G001(0,6) AND G002(0,4) AND G003(0,2) AND G004(0,6) AND G005(0,4) THEN K001
             'K001' => [
                 ['G001', 0.6], // Layar monitor tidak menampilkan gambar
                 ['G002', 0.4], // Menyala tetapi keluar garis-garis vertikal
@@ -27,7 +25,6 @@ class RuleSeeder extends Seeder
             ],
 
             // K002 - Keyboard
-            // IF G006(1) AND G007(0,8) AND G008(0,8) THEN K002
             'K002' => [
                 ['G006', 1.0], // Beberapa tombol tidak berfungsi
                 ['G007', 0.8], // Huruf menekan sendiri
@@ -35,17 +32,15 @@ class RuleSeeder extends Seeder
             ],
 
             // K003 - Memory RAM
-            // IF G001(0,6) AND G009(0,4) AND G010(0,4) AND G011(0,8) AND G012(0,6) THEN K003
             'K003' => [
                 ['G001', 0.6], // Layar monitor tidak menampilkan gambar
-                ['G009', 0.4], // Blank screen pada saat mulai loading operating system
+                ['G009', 0.4], // Blank screen pada saat mulai loading OS
                 ['G010', 0.4], // Saat dinyalakan screen tidak menyala
                 ['G011', 0.8], // Fan menyala sebentar kemudian mati
                 ['G012', 0.6], // LED indikator power menyala
             ],
 
             // K004 - Charger
-            // IF G013(0,6) AND G014(0,6) AND G015(0,8) AND G016(0,2) THEN K004
             'K004' => [
                 ['G013', 0.6], // Tidak ada indikator daya masuk
                 ['G014', 0.6], // Laptop di-charge posisi hidup kemudian mati
@@ -54,8 +49,6 @@ class RuleSeeder extends Seeder
             ],
 
             // K005 - Harddisk
-            // IF G017(1) AND G018(1) AND G019(0,8) AND G020(0,8) AND G021(0,2) AND G022(1)
-            //    AND G023(0,8) AND G024(0,8) AND G038(0,6) AND G040(0,8) THEN K005
             'K005' => [
                 ['G017', 1.0], // Sering bluescreen
                 ['G018', 1.0], // Loading data atau loading system lambat
@@ -70,7 +63,6 @@ class RuleSeeder extends Seeder
             ],
 
             // K006 - Touchpad
-            // IF G015(0,8) AND G025(1) AND G026(0,6) AND G027(1) THEN K006
             'K006' => [
                 ['G015', 0.8], // Kursor bergetar tidak stabil
                 ['G025', 1.0], // Tidak dapat di klik tombol touchpad
@@ -79,7 +71,6 @@ class RuleSeeder extends Seeder
             ],
 
             // K007 - Cooling Fan
-            // IF G028(1) AND G029(0,8) AND G030(0,2) THEN K007
             'K007' => [
                 ['G028', 1.0], // Kipas tidak terputar
                 ['G029', 0.8], // Bagian bawah laptop sangat panas
@@ -87,7 +78,6 @@ class RuleSeeder extends Seeder
             ],
 
             // K008 - Webcam
-            // IF G031(0,4) AND G032(1) AND G033(0,6) THEN K008
             'K008' => [
                 ['G031', 0.4], // Driver tidak bisa diinstall
                 ['G032', 1.0], // Tidak hidup webcam
@@ -95,7 +85,6 @@ class RuleSeeder extends Seeder
             ],
 
             // K009 - Baterai
-            // IF G034(1) AND G035(0,2) AND G036(0,8) THEN K009
             'K009' => [
                 ['G034', 1.0], // Baterai silang
                 ['G035', 0.2], // LED baterai mati
@@ -103,8 +92,6 @@ class RuleSeeder extends Seeder
             ],
 
             // K010 - Motherboard
-            // IF G017(1) AND G036(0,8) AND G037(0,6) AND G038(0,6) AND G039(0,2) AND G040(0,8)
-            //    AND G041(0,2) THEN K010
             'K010' => [
                 ['G017', 1.0], // Sering bluescreen
                 ['G036', 0.8], // Baterai tidak mau mengisi
@@ -116,32 +103,35 @@ class RuleSeeder extends Seeder
             ],
 
             // K011 - Speaker
-            // IF G042(1) AND G043(0,4) AND G044(0,8) AND G045(0,6) THEN K011
             'K011' => [
                 ['G042', 1.0], // Tidak ada bunyi suara sound
-                ['G043', 0.4], // Suara lebih kecil dari biasanya meskipun volume sudah maksimal
+                ['G043', 0.4], // Suara lebih kecil dari biasanya
                 ['G044', 0.8], // Suara muncul dan hilang secara tiba-tiba
-                ['G045', 0.6], // Suara terdengar pecah atau kemresek pada volume tinggi
+                ['G045', 0.6], // Suara terdengar pecah atau kemresek
             ],
         ];
 
-        foreach ($rules as $kodeKerusakan => $gejalaRules) {
+        foreach ($rules as $kodeKerusakan => $gejalaList) {
             $kerusakan = Kerusakan::where('kode', $kodeKerusakan)->first();
-
             if (!$kerusakan) continue;
 
-            foreach ($gejalaRules as [$kodeGejala, $cfNilai]) {
+            // Buat 1 Rule per kerusakan (struktur baru)
+            $rule = Rule::firstOrCreate(
+                ['kerusakan_id' => $kerusakan->id],
+                ['nama_rule'    => 'Rule ' . $kodeKerusakan]
+            );
+
+            // Kumpulkan pivot data: [gejala_id => ['cf_nilai' => value]]
+            $pivotData = [];
+            foreach ($gejalaList as [$kodeGejala, $cfNilai]) {
                 $gejala = Gejala::where('kode', $kodeGejala)->first();
-
                 if (!$gejala) continue;
+                $pivotData[$gejala->id] = ['cf_nilai' => $cfNilai];
+            }
 
-                Rule::updateOrCreate(
-                    [
-                        'kerusakan_id' => $kerusakan->id,
-                        'gejala_id'    => $gejala->id,
-                    ],
-                    ['cf_nilai' => $cfNilai]
-                );
+            // Sync pivot ke rule_gejala (replace all)
+            if (!empty($pivotData)) {
+                $rule->gejala()->sync($pivotData);
             }
         }
     }
