@@ -75,12 +75,13 @@ return new class extends Migration
         });
 
         // ── STEP 4: Hapus kolom & constraint lama dari tabel rules ────────────
-        // Di MySQL: drop FK dulu → drop unique index → drop column
-        Schema::table('rules', function (Blueprint $table) {
-            $table->dropForeign(['gejala_id']);       // drop FK dulu
-            $table->dropUnique(['kerusakan_id', 'gejala_id']); // baru unique index
-            $table->dropColumn(['gejala_id', 'cf_nilai']);     // terakhir baru kolom
-        });
+        // Gunakan raw SQL + disable FK checks agar tidak terblokir constraint
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        DB::statement('ALTER TABLE rules DROP INDEX IF EXISTS rules_gejala_id_foreign');
+        DB::statement('ALTER TABLE rules DROP INDEX IF EXISTS rules_kerusakan_id_gejala_id_unique');
+        DB::statement('ALTER TABLE rules DROP COLUMN IF EXISTS gejala_id');
+        DB::statement('ALTER TABLE rules DROP COLUMN IF EXISTS cf_nilai');
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     public function down(): void
